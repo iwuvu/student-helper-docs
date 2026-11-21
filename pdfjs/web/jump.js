@@ -22,22 +22,30 @@ function glide(container, toTop, toLeft) {
   window.addEventListener("touchmove", block, opts);
   window.addEventListener("keydown", blockKeys, opts);
   const start = performance.now();
-  const step = now => {
-    const t = Math.min(1, (now - start) / DURATION);
+  let done = false;
+  // Position depends only on elapsed time. Steps come from animation frames (smooth) and also from
+  // a 16 ms timer, so the glide still ends at exactly 0.5 s if the browser slows frames down.
+  const step = () => {
+    if (done) return;
+    const t = Math.min(1, (performance.now() - start) / DURATION);
     const k = ease(t);
-    // Set every frame, so anything else that scrolls meanwhile is overridden.
+    // Set on every step, so anything else that scrolls meanwhile is overridden.
     container.scrollTop = fromTop + (toTop - fromTop) * k;
     container.scrollLeft = fromLeft + (toLeft - fromLeft) * k;
     if (t < 1) {
       requestAnimationFrame(step);
     } else {
+      done = true;
+      clearInterval(timer);
       window.removeEventListener("wheel", block, opts);
       window.removeEventListener("touchmove", block, opts);
       window.removeEventListener("keydown", blockKeys, opts);
     }
   };
+  const timer = setInterval(step, 16);
   requestAnimationFrame(step);
 }
+window.studentHelperGlide = glide;   // for testing
 
 async function install() {
   const app = window.PDFViewerApplication;
